@@ -854,7 +854,7 @@ useQuery
 
 => useQuery 는 2가지 인자를 받는다(key값, fetcher function)
 
-=> useQuery 의 반환 값은 가지고 있는 fetcher function 이 loading 인지 여부와 loading이 끝났다면 fetcher function의 return data를 반환해준다.
+=> useQuery 의 반환 값은 가지고 있는 fetcher function 이 loading 인지 여부와 loading이 끝났다면 fetcher function의 return data를 반환해준다. + 캐싱도 도와줌 (useState역할)
 
 ```react
 // Coins.tsx
@@ -911,4 +911,201 @@ export default Coins;
 ```
 
 
+
+ReactQueryDevtools
+
+=> 개발자 도구에서 react-query의 캐시 등 여러가지 내용을 추가로 보여줌
+
+```react
+import { ReactQueryDevtools } from "react-query/devtools";
+
+function App() {
+  return (
+    <>
+      <GlobalStyle />
+      <Router />
+      <ReactQueryDevtools initialIsOpen={true} />
+    </>
+  );
+}
+```
+
+
+
+Coin.tsx에 있던 async와 await 그리고 useState를 => useQuery로 바꿔보자
+
+```react
+// api.tsx
+
+const BASE_URL = `https://api.coinpaprika.com/v1`;
+
+export function fetchCoins() {
+  return fetch(`${BASE_URL}/coins`).then((response) => response.json());
+}
+
+export function fetchCoinInfo(coinId: string) {
+  return fetch(`${BASE_URL}/coins/${coinId}`).then((response) =>
+    response.json()
+  );
+}
+
+export function fetchCoinTickers(coinId: string) {
+  return fetch(`${BASE_URL}/tickers/${coinId}`).then((response) =>
+    response.json()
+  );
+}
+```
+
+before
+
+```react
+const { coinId } = useParams<RouteParams>();
+const { state } = useLocation<RouteState>();
+const priceMatch = useRouteMatch("/:coinId/price"); // 해당 url 이 "/:coinId/price" 와 일치하면 Object 아니면 null 반환
+const chartMatch = useRouteMatch("/:coinId/chart");
+const [loading, setLoading] = useState(true);
+const [info, setInfo] = useState<InfoData>();
+const [priceInfo, setPriceInfo] = useState<PriceData>();
+
+function Coin() {
+  useEffect(() => {
+    (async () => {
+      const infoData = await (
+        await fetch(`https://api.coinpaprika.com/v1/coins/${coinId}`)
+      ).json();
+      const priceData = await (
+        await fetch(`https://api.coinpaprika.com/v1/tickers/${coinId}`)
+      ).json();
+      setInfo(infoData);
+      setPriceInfo(priceData);
+      setLoading(false);
+    })();
+  }, [coinId]);
+```
+
+after
+
+```react
+function Coin() {
+  const { coinId } = useParams<RouteParams>();
+  const { state } = useLocation<RouteState>();
+  const priceMatch = useRouteMatch("/:coinId/price"); // 해당 url 이 "/:coinId/price" 와 일치하면 Object 아니면 null 반환
+  const chartMatch = useRouteMatch("/:coinId/chart");
+  
+  const { isLoading: infoLoading, data: infoData } = useQuery<InfoData>(
+    ["info", coinId],
+    () => fetchCoinInfo(coinId)
+  );
+  const { isLoading: tickersLoading, data: tickersData } = useQuery<PriceData>(
+    ["tickers", coinId],
+    () => fetchCoinTickers(coinId)
+  );
+  // isLoading: infoLoading, data: infoData는 아래 useQuery가 하나 더 생기기 때문에 구별해 주기 위해서 각각의 별칭을 넣은 것임
+  // () => fetchCoinInfo(coinId) 는 fetch function안에 파라미터가 들어가기 때문에 화살표 함수로 작성
+  const loading = infoLoading || tickersLoading;
+```
+
+
+
+useQuery의 장점
+
+1. 해당 함수가 isLoading되었는지에 대한 여부를 알려줌(fetch function을 작성해서 연결해줌)
+2. fetch function을 통해서 전달받은 데이터를 캐싱해서 가지고 있음 => api 다시 호출할 필요가 적어짐
+
+
+
+=============================================================================
+
+Chart
+
+```react
+// api.tsx
+export function fetchCoinHistory(coinId: string) {
+  const endDate = Math.floor(Date.now() / 1000);
+  const startDate = endDate - 60 * 60 * 24 * 7 * 2;
+  return fetch(
+    `${BASE_URL}/coins/${coinId}/ohlcv/historical?start=${startDate}&end=${endDate}`
+  ).then((response) => response.json());
+}
+
+// chart.tsx
+import { useQuery } from "react-query";
+import { fetchCoinHistory } from "../api";
+
+interface ChartProps {
+  coinId: string;
+}
+
+interface IHistorical {
+  time_open: string;
+  time_close: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  market_cap: number;
+}
+
+function Chart({ coinId }: ChartProps) {  // coinId를 전달받고 ChartProps로 검증
+  const {} = useQuery<IHistorical[]>(["ohlcv", coinId], () => fetchCoinHistory(coinId));
+  return <h1>Chart</h1>;
+}
+
+// <IHistorical[]> 에서 []하는 이유는 data 한 세트가 <IHistorical>이고 이러한 세트를 2주치 총 14개를 받아와야하기 때문에 []로 처리해야해서 <IHistorical[]>로 사용한다.
+
+export default Chart;
+```
+
+
+
+JS data 시각화 library
+
+```shell
+npm install --save react-apexcharts apexcharts
+```
+
+나머지는 찾아서 원하는대로 커스터마이징하면 끝
+
+
+
+useQuery의 세 번째 argument 사용법
+
+=> 세 번째 인자는 해당 fetch fuction을 얼마 주기로 다시 실행하는지 시간을 밀리세컨으로 정할 수 있음
+
+useQuery`<type를 정하는 interface>`("key" || ["key", props], fetch func || () => fetch func(props), { refetchInterval: 10000, } 
+
+```react
+const { isLoading, data } = useQuery<IHistorical[]>(
+    ["ohlcv", coinId],
+    () => fetchCoinHistory(coinId),
+    {
+      refetchInterval: 10000,	// 10 초마다 다시 불러오기
+    }
+  );
+```
+
+
+
+React helmet
+
+=> `<title>`에 페이지 마다 원하는 내용을 작성할 수 있게 도와준다
+
+=> favicon도 작성가능하고 css 스타일도 적용가능
+
+```shell
+npm i react-helmet
+npm i --save-dev @types/react-helmet
+```
+
+```react
+// Coins.tsx
+return (
+    <Container>
+      <Helmet>	// react-helmet를 사용해서 `<title>`에 적용
+        <title>코인</title>
+      </Helmet>
+      ...
+      
+```
 
