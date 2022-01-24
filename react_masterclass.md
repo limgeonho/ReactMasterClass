@@ -554,7 +554,6 @@ ReactDOM.render(
     <ThemeProvider theme={darkTheme}> // ThemeProvider 를 가져오고 기존의 theme와 같다.
       <App />
     </ThemeProvider>
-    r
   </React.StrictMode>,
   document.getElementById("root")
 );
@@ -1108,4 +1107,148 @@ return (
       ...
       
 ```
+
+
+
+=============================================================================
+
+
+
+Recoil => state management library
+
+Recoil은 상태관리를 도와주는 라이브러리이고 아직은 recoil을 사용하지 않고 상태를 관리해보자
+
+darkmode, lightmode => 토글버튼을 만들어서 모드 변경
+
+```react
+// App.js
+function App() {
+  const [isDark, setIsDark] = useState(true);
+  const toggleDark = () => setIsDark((current) => !current); // useState의 setIsDark의 첫 번째 인자는 기존에 가지고 있던 isDark 값임!!
+  return (
+    <>
+      <ThemeProvider theme={isDark ? darkTheme : lightTheme}>
+        <button onClick={toggleDark}>Toggle Mode</button>
+        <GlobalStyle />
+        <Router />
+        <ReactQueryDevtools initialIsOpen={true} />
+      </ThemeProvider>
+    </>
+  );
+}
+
+export default App;
+```
+
+=> global state가 필요한 이유
+
+코드는 따로 적지 않겠음...
+
+하지만 state가 없고 props로만 데이터의 상태를 확인할 수 있다면 코드들이 매우 복잡해진다
+
+=> props는 부모와 자식사이에서만 전달이 가능하기 때문에 멀리있는 component에서 해당 data의 state를 접근하고 싶을 때는 한 단계씩 내려줘야하는 불편함이 있다
+
+=> 따라서, 이를 해결하고자 state management가 나타남 => recoil
+
+Recoil에서는 Atom이라는 공간안에 global하게 저장하고 싶은 것을 넣어놓고 사용한다
+
+=> 필요한 component가 직접 중간 전달과정을 거치지 않고 Atom에 접근해서 해당 value를 가져올 수 있다.
+
+
+
+recoil 설치방법
+
+```shell
+npm install recoil
+```
+
+
+
+atom에 원하는 값의 상태를 보관하는 방법 => 꺼내오는 방법(useRecoilValue)
+
+```react
+// atoms.ts
+import { atom } from "recoil";
+
+// atom을 만들고 내부적으로는 key: value 형태로 적어준다.
+export const isDarkAtom = atom({
+  key: "isDark",
+  default: false,
+});
+
+// index.tsx => 먼저, <RecoilRoot>으로 감싼다.
+import React from "react";
+import ReactDOM from "react-dom";
+import App from "./App";
+import { QueryClient, QueryClientProvider } from "react-query";
+import { RecoilRoot } from "recoil";
+
+const queryClient = new QueryClient();
+
+ReactDOM.render(
+  <React.StrictMode>
+    <RecoilRoot>
+      <QueryClientProvider client={queryClient}>
+        <App />
+      </QueryClientProvider>
+    </RecoilRoot>
+  </React.StrictMode>,
+  document.getElementById("root")
+);
+
+// App.tsx
+function App() {
+  // recoil 사용으로 인해 불필요해짐
+  // const [isDark, setIsDark] = useState(true);
+  // const toggleDark = () => setIsDark((current) => !current); // useState의 setIsDark의 첫 번째 인자는 기존에 가지고 있던 isDark 값임!!
+  const isDark = useRecoilValue(isDarkAtom);
+  return (
+    <>
+      <ThemeProvider theme={isDark ? darkTheme : lightTheme}>
+        <GlobalStyle />
+        <Router />
+        <ReactQueryDevtools initialIsOpen={true} />
+      </ThemeProvider>
+    </>
+  );
+}
+
+export default App;
+```
+
+```react
+// atom에서 가져오기
+const isDark = useRecoilValue(isDarkAtom);
+```
+
+
+
+=> atom에서 가져온 value를 수정하는 방법(useSetRecoilState) useState와 비슷하게 동작함(첫 번째 인자가 현재 값)
+
+```react
+// Coins.tsx
+function Coins() {
+  const setDarkAtom = useSetRecoilState(isDarkAtom);
+  const toggleDarkAtom = () => setDarkAtom((prev) => !prev); // setDarkAtom는 useState와 비슷하게 동작함!
+  const { isLoading, data } = useQuery<ICoin[]>("allCoins", fetchCoins); // 위의 주석들을 한 줄로 대체
+
+  // styled-component를 사용하면 아래처럼 태그의 이름만 보고 파악가능
+  return (
+    <Container>
+      <Helmet>
+        <title>코인</title>
+      </Helmet>
+      <Header>
+        <Title>코인</Title>
+        <button onClick={toggleDarkAtom}>Toggle Mode</button>
+      </Header>
+          ...
+```
+
+```react
+const setDarkAtom = useSetRecoilState(isDarkAtom);
+// useSetRecoilState는 isDarkAtom의 key인 isDark를 수정할 수 있는 function을 반환한다.
+```
+
+결론: recoil 상태관리에 매우 편함...bb
 
