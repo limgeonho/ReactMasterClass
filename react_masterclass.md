@@ -1252,3 +1252,425 @@ const setDarkAtom = useSetRecoilState(isDarkAtom);
 
 결론: recoil 상태관리에 매우 편함...bb
 
+
+
+==============================================================================
+
+
+
+Todo with Recoil
+
+
+
+기존의 useState를 이용해서 todo작성
+
+```react
+// ToDoList.tsx
+import React, { useState } from "react";
+
+function ToDoList() {
+  const [toDo, setToDo] = useState("");
+  const onChange = (event: React.FormEvent<HTMLInputElement>) => {
+    const {
+      currentTarget: { value },
+    } = event;
+    setToDo(value);
+  };
+  const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    console.log(toDo);
+    console.log(event);
+  };
+  return (
+    <div>
+      <form onSubmit={onSubmit}>
+        <input onChange={onChange} value={toDo} placeholder="Write a to do" />
+        <button>Add</button>
+      </form>
+    </div>
+  );
+}
+
+export default ToDoList;
+```
+
+
+
+react hook form
+
+react에서 form을 관리하기 매우 편한 라이브러리
+
+```shell
+npm install react-hook-form
+```
+
+react-hook-form 을 사용하는 방법 => useForm()
+
+위의 onChange, onSubmit, useState들은 결국 하나의 input을 처리하기 위해 존재하는 것들이었다.
+
+하지만 useForm을 사용해서 위의 복잡한 코드들을 한 줄로 줄일 수 있다.
+
+```react
+function ToDoList() {
+  const { register, watch } = useForm();
+  console.log(watch());
+  return (
+    <div>
+      <form>
+        <input {...register("email")} placeholder="Email" /> // {...register("")}로끝
+        <input {...register("firstName")} placeholder="First Name" />
+        <input {...register("lastName")} placeholder="Last Name" />
+        <input {...register("username")} placeholder="Username" />
+        <input {...register("password")} placeholder="Password" />
+        <input {...register("password1")} placeholder="Password1" />
+        <button>Add</button>
+      </form>
+    </div>
+  );
+}
+export default ToDoList;
+```
+
+```react
+// 기존의 onChange를 대체하는 방법 register, watch
+
+const { register, watch } = useForm();
+// useForm은 기본적으로 register와 watch를 가진다.
+// register로 등록한 value는 알아서 state가 관리되고 
+// watch는 해당 value가 변화할 때마다 감지한다.
+
+`<input {...register("emial") placeholder="Email" /}>` 방식으로 {...register("value")}
+```
+
+
+
+useForm() 의 input 값의 에러처리를 위한 인자 => handleSubmit, formState
+
+handleSubmit, formState를 이용하면 회원가입기능 같은 form에서 좀 더 빠르고 쉽게 error처리를 할 수 있다.(추천기능!!)
+
+```react
+function ToDoList() {
+  const { register, handleSubmit, formState } = useForm();
+  const onValid = (data: any) => {
+    //onSubmit={handleSubmit(onValid)} 를 위해서 반드시 필요한 인자
+    console.log(data);
+  };
+  console.log(formState.errors); // input 값에 에러가 정해놓은 에러가 있을 경우에 메세지를 볼 수 있음
+  return (
+    <div>
+      <form
+        style={{ display: "flex", flexDirection: "column" }}
+        onSubmit={handleSubmit(onValid)}
+      >
+        <input {...register("email", { required: true })} placeholder="Email" />
+        <input
+          {...register("firstName", { required: true })}
+          placeholder="First Name"
+        />
+        <input
+          {...register("lastName", { required: true })}
+          placeholder="Last Name"
+        />
+        <input
+          {...register("username", { required: true, minLength: 10 })}
+          placeholder="Username"
+        />
+        <input
+          {...register("password", { required: true, minLength: 5 })}
+          placeholder="Password"
+        />
+        <input
+          {...register("password1", {
+            required: "Password is required",
+            minLength: {
+              value: 5,
+              message: "Your password is too short.",
+            },
+          })}
+          placeholder="Password1"
+        />
+        <button>Add</button>
+      </form>
+    </div>
+  );
+}
+export default ToDoList;
+```
+
+
+
+onSubmit={handleSubmit(onValid)}
+
+```react
+// handleSubmit(onValid) 은 반드시 함수로 만들어진 onValid를 인자로 갖는다.
+const onValid = (data: any) => {
+    //onSubmit={handleSubmit(onValid)} 를 위해서 반드시 필요한 인자
+    console.log(data);
+}; // onValid는 form이 submit되기 전에 받은 input들을 점검하고 이상이 없을 시에 submit를 완료한다. 
+
+<form onSubmit={handleSubmit(onValid)}>
+```
+
+
+
+...register("value", {required: true. minLength: 5})
+
+```react
+// ...register안에 input의 Validation을 넣는 방법 => { required: true, minLength: 5 } 으로 넣고 통과하지 못할 시에 해당 사유가 출력된다.
+<input {...register("password", { required: true, minLength: 5 })} placeholder="Password"/>
+```
+
+```react
+<input {...register("password1", {required: "Password is required",
+	minLength: {
+		value: 5,
+		message: "Your password is too short.",
+		},
+	})}
+	placeholder="Password1"/>
+// minLength는 5이고 충족하지 못했을 경우 message에 "Your password is too short."가 나옴
+```
+
+
+
+=> 위에서 message에 출력한 문자를 사용자에게 보여주기 => formState
+
+```react
+function ToDoList() {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors }, // 에러 표시하기
+  } = useForm<IForm>({
+    defaultValues: {
+      email: "@naver.com", // 기본 값으로 @naver.com 설정
+    },
+  });
+  const onValid = (data: any) => {
+    //onSubmit={handleSubmit(onValid)} 를 위해서 반드시 필요한 인자
+    console.log(data);
+  };
+  return (
+    <div>
+      <form
+        style={{ display: "flex", flexDirection: "column" }}
+        onSubmit={handleSubmit(onValid)}
+      >
+        <input
+          {...register("email", {
+            required: "Email is required", // 입력이 되지 않으면 나올 메세지
+            pattern: {
+              value: /^[A-Za-z0-9._%+-]+@naver.com$/,  // 정규표현식으로 @naver.com
+              message: "Only naver.com emails allowed", // 틀릴 시 메세지
+            },
+          })}
+          placeholder="Email"
+        />
+        <span>{errors?.email?.message}</span> // errors.email 메세지가 있다면 출력
+        <input
+          {...register("firstName", { required: "write here" })}
+          placeholder="First Name"
+        />
+        <span>{errors?.firstName?.message}</span>
+        <input
+          {...register("lastName", { required: "write here" })}
+          placeholder="Last Name"
+        />
+        <span>{errors?.lastName?.message}</span>
+        <input
+          {...register("username", { required: "write here", minLength: 10 })}
+          placeholder="Username"
+        />
+        <span>{errors?.username?.message}</span>
+        <input
+          {...register("password", { required: "write here", minLength: 5 })}
+          placeholder="Password"
+        />
+        <span>{errors?.password?.message}</span>
+        <input
+          {...register("password1", {
+            required: "Password is required",
+            minLength: {
+              value: 5,
+              message: "Your password is too short.",
+            },
+          })}
+          placeholder="Password1"
+        />
+        <span>{errors?.password1?.message}</span>
+        <button>Add</button>
+      </form>
+    </div>
+  );
+}
+```
+
+Validation에는 key: value 로 지정하는 방법이 있고 
+
+key : Object로 지정하는 방법이 있다.
+
+```react
+<input
+    {...register("email", {
+        required: "Email is required", // 입력이 되지 않으면 나올 메세지
+        pattern: {
+            value: /^[A-Za-z0-9._%+-]+@naver.com$/,  // 정규표현식으로 @naver.com
+            message: "Only naver.com emails allowed", // 틀릴 시 메세지
+        },
+    })}
+    placeholder="Email"
+    />
+```
+
+위의 방법들을 이용해서 쉽게 form에서 사용자로부터 받을 정보들을 validate 할 수 있다.
+
+=> 추가적으로 조건을 충족하지 못했을 경우 error?.value?.message까지 출력 가능
+
+
+
+특정 항목의 조건에 따라 에러를 발생시키는 방법(입력받은 두 개의 비밀번호 일치여부 판단)
+
+=> setError
+
+form의 최종형태!!!!
+
+```react
+// 회원가입 form 최종 형태 
+
+import { useForm } from "react-hook-form";
+
+interface IForm {
+  email: string;
+  firstName: string;
+  lastName: string;
+  username: string;
+  password: string;
+  password1: string;
+  extraError?: string;
+}
+
+function ToDoList() {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setError,					// setError를 통해서 직접 에러를 발생시킴
+  } = useForm<IForm>({
+    defaultValues: {
+      email: "@naver.com",
+    },
+  });
+  const onValid = (data: IForm) => {
+    if (data.password !== data.password1) {	// 입력받은 비밀번호가 일치하지 않는다면
+      setError(	// 에러 발생 트리거
+        "password1",
+        { message: "Password are not the same" }, // 에러 메세지
+        { shouldFocus: true }					// 에러가 발생한 input으로 자동 focus
+      );
+    }
+    // setError("extraError", { message: "Server offline." });
+  };
+  console.log(errors);
+  return (
+    <div>
+      <form
+        style={{ display: "flex", flexDirection: "column" }}
+        onSubmit={handleSubmit(onValid)}
+      >
+        <input
+          {...register("email", {
+            required: "Email is required",
+            pattern: {
+              value: /^[A-Za-z0-9._%+-]+@naver.com$/,
+              message: "Only naver.com emails allowed",
+            },
+          })}
+          placeholder="Email"
+        />
+        <span>{errors?.email?.message}</span>
+        <input
+          {...register("firstName", {
+            required: "write here",
+            validate: { // validate을 통해 원하지 않는 입력 값 배제
+              noNico: (value) => // value는 현재 사용자가 입력한 값
+                value.includes("nico") ? "no nicos allowed" : true, // 포함하면 no nic.. 메세지를 에러메세지로 보여줌
+              noNick: (value) =>
+                value.includes("nick") ? "no nick allowed" : true,
+            },
+          })}
+          placeholder="First Name"
+        />
+        <span>{errors?.firstName?.message}</span>
+        <input
+          {...register("lastName", { required: "write here" })}
+          placeholder="Last Name"
+        />
+        <span>{errors?.lastName?.message}</span>
+        <input
+          {...register("username", { required: "write here", minLength: 10 })}
+          placeholder="Username"
+        />
+        <span>{errors?.username?.message}</span>
+        <input
+          {...register("password", { required: "write here", minLength: 5 })}
+          placeholder="Password"
+        />
+        <span>{errors?.password?.message}</span>
+        <input
+          {...register("password1", {
+            required: "Password is required",
+            minLength: {
+              value: 5,
+              message: "Your password is too short.",
+            },
+          })}
+          placeholder="Password1"
+        />
+        <span>{errors?.password1?.message}</span>
+        <button>Add</button>
+        <span>{errors?.extraError?.message}</span>
+      </form>
+    </div>
+  );
+}
+export default ToDoList;
+```
+
+
+
+입력받은 두 비밀번호의 일치 여부 판단
+
+```react
+const onValid = (data: IForm) => {
+    if (data.password !== data.password1) {	// 입력받은 비밀번호가 일치하지 않는다면
+      setError(	// 에러 발생 트리거
+        "password1",
+        { message: "Password are not the same" }, // 에러 메세지
+        { shouldFocus: true }					// 에러가 발생한 input으로 자동 focus
+      );
+    }
+  };
+```
+
+
+
+원하지 않는 값은 입력을 받지 않고 해당 오류 메세지(제약조건)을 보여준다
+
+```react
+<input {...register("firstName", {
+   required: "write here",
+   validate: { // validate을 통해 원하지 않는 입력 값 배제
+     noNico: (value) => // value는 현재 사용자가 입력한 값
+       value.includes("nico") ? "no nicos allowed" : true, 
+       // 포함하면 no nic.. 메세지를 에러메세지로 보여줌
+     noNick: (value) =>
+        value.includes("nick") ? "no nick allowed" : true,
+        },
+     })}
+    placeholder="First Name"/>
+```
+
+
+
+==============================================================================
+
