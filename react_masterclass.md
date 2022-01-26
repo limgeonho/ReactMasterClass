@@ -1672,5 +1672,226 @@ const onValid = (data: IForm) => {
 
 
 
+1. useForm을 import한다
+2. useForm의 register, handleSubmit를 활용한다
+3. input에서 호출한다
+4. validate를 작성한다
+5. errors를 관리하고 출력한다
+
 ==============================================================================
+
+useForm을 사용해서 기존의 ToDoList를 바꾸면
+
+```react
+import { useForm } from "react-hook-form";
+
+interface IForm {
+  toDo: string;
+}
+
+function ToDoList() {
+  const { register, handleSubmit, setValue } = useForm<IForm>(); // setValue는 toDo변경
+  const handleValid = (data: IForm) => {
+    console.log("add to do", data.toDo);
+    setValue("toDo", ""); // setValue => handleSubmit를 통과하면 toDo를 ""로 바꾼다.
+  };
+  return (
+    <div>
+      <form onSubmit={handleSubmit(handleValid)}>
+        <input
+          {...register("toDo", { required: "Please write a To Do" })}
+          placeholder="Write a to do"
+        />
+        <button>Add</button>
+      </form>
+    </div>
+  );
+}
+
+export default ToDoList;
+```
+
+- setValue
+
+```react
+ const handleValid = (data: IForm) => {
+    console.log("add to do", data.toDo);
+    setValue("toDo", ""); // setValue => handleSubmit를 통과하면 toDo를 ""로 바꾼다.
+  };
+```
+
+
+
+Recoil의 또 하나 추가적인 기능 => useRecoilState
+
+useRecoilState 는 기존의 useRecoilValue와 useSetRecoilState의 기능을 합쳐 놓은 것이다.
+
+추가적으로 useState와 같은 형태를 가진다.
+
+```react
+const toDoState = atom<IToDo[]>({	// atom으로 등록한다. => global state 등록
+  key: "ToDo",
+  default: [],
+});  
+
+const [toDos, setToDos] = useRecoilState(toDoState); // toDos는 setToDos로 만 관리
+// const value = useRecoilValue(toDoState);
+// const modFn = useSetRecoilState(toDoState);
+```
+
+```react
+import { useForm } from "react-hook-form";
+import { atom, useRecoilState } from "recoil";
+
+interface IForm {
+  toDo: string;
+}
+
+interface IToDo {
+  text: string;
+  id: number;
+  category: "TO_DO" | "DOING" | "DONE"; // category를 세 가지로만 정의하는 방법
+}
+
+const toDoState = atom<IToDo[]>({
+  key: "ToDo",
+  default: [],
+});
+
+function ToDoList() {
+  const [toDos, setToDos] = useRecoilState(toDoState);
+  // const value = useRecoilValue(toDoState);
+  // const modFn = useSetRecoilState(toDoState);
+  const { register, handleSubmit, setValue } = useForm<IForm>();
+  const handleValid = ({ toDo }: IForm) => {
+    // { toDo }는 원래 toDo가 있던 data.toDo와 같은 역할
+    setToDos((oldTodos) => [
+      { text: toDo, id: Date.now(), category: "TO_DO" }, // [{새로 등록하는 값}, ...기존의 값]
+      ...oldTodos,
+    ]);
+    setValue("toDo", "");
+  };
+  return (
+    <div>
+      <form onSubmit={handleSubmit(handleValid)}>
+        <input
+          {...register("toDo", { required: "Please write a To Do" })}
+          placeholder="Write a to do"
+        />
+        <button>Add</button>
+      </form>
+      <ul>
+        {toDos.map((toDo) => (
+          <li key={toDo.id}>{toDo.text}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export default ToDoList;
+```
+
+
+
+=> component 별로 리팩토링...
+
+
+
+ToDoList에서 버튼을 눌렀을때 해당 버튼을 사라지게 하는 방법
+
+```react
+import React from "react";
+import { useSetRecoilState } from "recoil";
+import { IToDo, toDoState } from "../atoms";
+
+function ToDo({ text, category, id }: IToDo) {
+  const setToDos = useSetRecoilState(toDoState);
+  const onClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    const {
+      currentTarget: { name },
+    } = event;	// const {currentTarge: {name}} = event; => name = event.currentTarget.name => 마우스로 버튼을 눌렀을 경우 해당 버튼의 name을 가져오는 방법
+  };
+  return (
+    <li>
+      <span>{text}</span>
+      {category !== "DOING" && (
+        <button name="DOING" onClick={onClick}>
+          Doing
+        </button>
+      )}
+      {category !== "TO_DO" && (
+        <button name="TO_DO" onClick={onClick}>
+          To Do
+        </button>
+      )}
+      {category !== "DONE" && (
+        <button name="DONE" onClick={onClick}>
+          Done
+        </button>
+      )}
+    </li>
+  );
+}
+
+export default ToDo;
+```
+
+
+
+참고로 함수의 인자에 함수를 넣었을 경우 return 값을 주기 위해서는 인자로 넣는 함수는 () =>{} 형태로 내부에 선언해야한다.
+
+
+
+ToDo에서 mutate하지 않고 새로운 array를 만들어서 반환해야함
+
+=> 바꾸려는 ToDo를 찾은 다음에 해당 id와 일치하는 index를 찾고 
+
+=> 새로운 ToDo를 만들어서 원하는 값을 넣어놓는다
+
+```react
+function ToDo({ text, category, id }: IToDo) {
+  const setToDos = useSetRecoilState(toDoState);
+  const onClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    const {
+      currentTarget: { name },
+    } = event;
+    setToDos((oldToDos) => {
+      const targetIndex = oldToDos.findIndex((toDo) => toDo.id === id); // id로 index 찾기 => 굳이 index까지 찾아서 바꾸려는 이유는 기존의 array의 순서를 유지하기 위해
+      const newToDo = { text, id, category: name }; // 새로운 toDo를 만들고 새롭게 클릭된 버튼의 name으로 category를 설정한다.
+      return oldToDos;
+    });
+  };
+  return (
+  ...
+```
+
+
+
+[...example] == example라는 array의 원소를 모두 풀어 놓겠다.
+
+기존의 array(oldToDo)를 풀어서 targetIndex에 해당하는 toDo를 잡아내서 newToDo로 교체한다
+
+이때 기존의 array의 순서는 일치해야한다 => algorithm 적인 요소!!
+
+```react
+function ToDo({ text, category, id }: IToDo) {
+  const setToDos = useSetRecoilState(toDoState);
+  const onClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    const {
+      currentTarget: { name },
+    } = event;
+    setToDos((oldToDos) => {
+      const targetIndex = oldToDos.findIndex((toDo) => toDo.id === id);
+      const newToDo = { text, id, category: name as any }; // name as any => ts가 name은 검사하지 않고 그냥 통과!!
+      return [	// 기존의 array에 새로운 toDo를 순서에 맞게 바꾼뒤 새로운 array를 return(return값은 global state에서 관리하는 data로 수정된다!! => useSetRecoilState(toDoState))
+        ...oldToDos.slice(0, targetIndex),
+        newToDo,
+        ...oldToDos.slice(targetIndex + 1),
+      ];
+    });
+  };
+  return (
+  ...
+```
 
