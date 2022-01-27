@@ -2,7 +2,7 @@ npx create-react-app react-masterclass
 
 npm i styled-components
 
-```react
+```js
 function App() {
   return (
     <div style={{ display: "flex"}}>
@@ -15,7 +15,7 @@ function App() {
 
 =>
 
-```react
+```js
 import styled from "styled-components";
 
 // styled.(html태그)`(css)` => ``(백틱)
@@ -56,7 +56,7 @@ export default App;
 
 => 중복제거 ${props}이용 + const Circle=> styled(Box)``확장
 
-```react
+```js
 import styled from "styled-components";
 
 // styled.(html태그)`(css)` => ``(백틱)
@@ -88,7 +88,7 @@ export default App;
 
 =>
 
-```react
+```js
 import styled from "styled-components";
 
 const Father = styled.div`
@@ -116,7 +116,7 @@ export default App;
 
 =>
 
-```react
+```js
 import styled from "styled-components";
 
 const Father = styled.div`
@@ -144,7 +144,7 @@ export default App;
 
 => animation
 
-```react
+```js
 import styled, { keyframes } from "styled-components";
 
 const Wrapper = styled.div`
@@ -200,7 +200,7 @@ export default App;
 
 => 커스터 마이징 component
 
-```react
+```js
 import styled, { keyframes } from "styled-components";
 
 const Wrapper = styled.div`
@@ -259,7 +259,7 @@ export default App;
 
 => Theme(dark/light mode)
 
-```react
+```js
 // index.html
 import React from "react";
 import ReactDOM from "react-dom";
@@ -815,7 +815,7 @@ const chartMatch = useRouteMatch("/:coinId/chart");
 
 props의 타입 검사하는 법
 
-```react
+```typescript
 const Tab = styled.span<{ isActive: boolean }>``; 
 // span<{ isActive: boolean }> 의 props의 타입을 검사
 
@@ -855,7 +855,7 @@ useQuery
 
 => useQuery 의 반환 값은 가지고 있는 fetcher function 이 loading 인지 여부와 loading이 끝났다면 fetcher function의 return data를 반환해준다. + 캐싱도 도와줌 (useState역할)
 
-```react
+```typescript
 // Coins.tsx
 import { useQuery } from "react-query";
 
@@ -915,7 +915,7 @@ ReactQueryDevtools
 
 => 개발자 도구에서 react-query의 캐시 등 여러가지 내용을 추가로 보여줌
 
-```react
+```typescript
 import { ReactQueryDevtools } from "react-query/devtools";
 
 function App() {
@@ -933,7 +933,7 @@ function App() {
 
 Coin.tsx에 있던 async와 await 그리고 useState를 => useQuery로 바꿔보자
 
-```react
+```typescript
 // api.tsx
 
 const BASE_URL = `https://api.coinpaprika.com/v1`;
@@ -957,7 +957,7 @@ export function fetchCoinTickers(coinId: string) {
 
 before
 
-```react
+```typescript
 const { coinId } = useParams<RouteParams>();
 const { state } = useLocation<RouteState>();
 const priceMatch = useRouteMatch("/:coinId/price"); // 해당 url 이 "/:coinId/price" 와 일치하면 Object 아니면 null 반환
@@ -984,7 +984,7 @@ function Coin() {
 
 after
 
-```react
+```typescript
 function Coin() {
   const { coinId } = useParams<RouteParams>();
   const { state } = useLocation<RouteState>();
@@ -1017,7 +1017,7 @@ useQuery의 장점
 
 Chart
 
-```react
+```typescript
 // api.tsx
 export function fetchCoinHistory(coinId: string) {
   const endDate = Math.floor(Date.now() / 1000);
@@ -1074,7 +1074,7 @@ useQuery의 세 번째 argument 사용법
 
 useQuery`<type를 정하는 interface>`("key" || ["key", props], fetch func || () => fetch func(props), { refetchInterval: 10000, } 
 
-```react
+```typescript
 const { isLoading, data } = useQuery<IHistorical[]>(
     ["ohlcv", coinId],
     () => fetchCoinHistory(coinId),
@@ -1097,7 +1097,7 @@ npm i react-helmet
 npm i --save-dev @types/react-helmet
 ```
 
-```react
+```typescript
 // Coins.tsx
 return (
     <Container>
@@ -1120,7 +1120,7 @@ Recoil은 상태관리를 도와주는 라이브러리이고 아직은 recoil을
 
 darkmode, lightmode => 토글버튼을 만들어서 모드 변경
 
-```react
+```typescript
 // App.js
 function App() {
   const [isDark, setIsDark] = useState(true);
@@ -1166,7 +1166,7 @@ npm install recoil
 
 atom에 원하는 값의 상태를 보관하는 방법 => 꺼내오는 방법(useRecoilValue)
 
-```react
+```typescript
 // atoms.ts
 import { atom } from "recoil";
 
@@ -1216,7 +1216,7 @@ function App() {
 export default App;
 ```
 
-```react
+```typescript
 // atom에서 가져오기
 const isDark = useRecoilValue(isDarkAtom);
 ```
@@ -1225,7 +1225,7 @@ const isDark = useRecoilValue(isDarkAtom);
 
 => atom에서 가져온 value를 수정하는 방법(useSetRecoilState) useState와 비슷하게 동작함(첫 번째 인자가 현재 값)
 
-```react
+```typescript
 // Coins.tsx
 function Coins() {
   const setDarkAtom = useSetRecoilState(isDarkAtom);
@@ -1245,7 +1245,7 @@ function Coins() {
           ...
 ```
 
-```react
+```typescript
 const setDarkAtom = useSetRecoilState(isDarkAtom);
 // useSetRecoilState는 isDarkAtom의 key인 isDark를 수정할 수 있는 function을 반환한다.
 ```
@@ -1264,7 +1264,7 @@ Todo with Recoil
 
 기존의 useState를 이용해서 todo작성
 
-```react
+```typescript
 // ToDoList.tsx
 import React, { useState } from "react";
 
@@ -1310,7 +1310,7 @@ react-hook-form 을 사용하는 방법 => useForm()
 
 하지만 useForm을 사용해서 위의 복잡한 코드들을 한 줄로 줄일 수 있다.
 
-```react
+```typescript
 function ToDoList() {
   const { register, watch } = useForm();
   console.log(watch());
@@ -1331,7 +1331,7 @@ function ToDoList() {
 export default ToDoList;
 ```
 
-```react
+```typescript
 // 기존의 onChange를 대체하는 방법 register, watch
 
 const { register, watch } = useForm();
@@ -1348,7 +1348,7 @@ useForm() 의 input 값의 에러처리를 위한 인자 => handleSubmit, formSt
 
 handleSubmit, formState를 이용하면 회원가입기능 같은 form에서 좀 더 빠르고 쉽게 error처리를 할 수 있다.(추천기능!!)
 
-```react
+```typescript
 function ToDoList() {
   const { register, handleSubmit, formState } = useForm();
   const onValid = (data: any) => {
@@ -1401,7 +1401,7 @@ export default ToDoList;
 
 onSubmit={handleSubmit(onValid)}
 
-```react
+```typescript
 // handleSubmit(onValid) 은 반드시 함수로 만들어진 onValid를 인자로 갖는다.
 const onValid = (data: any) => {
     //onSubmit={handleSubmit(onValid)} 를 위해서 반드시 필요한 인자
@@ -1415,12 +1415,12 @@ const onValid = (data: any) => {
 
 ...register("value", {required: true. minLength: 5})
 
-```react
+```typescript
 // ...register안에 input의 Validation을 넣는 방법 => { required: true, minLength: 5 } 으로 넣고 통과하지 못할 시에 해당 사유가 출력된다.
 <input {...register("password", { required: true, minLength: 5 })} placeholder="Password"/>
 ```
 
-```react
+```typescript
 <input {...register("password1", {required: "Password is required",
 	minLength: {
 		value: 5,
@@ -1435,7 +1435,7 @@ const onValid = (data: any) => {
 
 => 위에서 message에 출력한 문자를 사용자에게 보여주기 => formState
 
-```react
+```typescript
 function ToDoList() {
   const {
     register,
@@ -1509,7 +1509,7 @@ Validation에는 key: value 로 지정하는 방법이 있고
 
 key : Object로 지정하는 방법이 있다.
 
-```react
+```typescript
 <input
     {...register("email", {
         required: "Email is required", // 입력이 되지 않으면 나올 메세지
@@ -1534,7 +1534,7 @@ key : Object로 지정하는 방법이 있다.
 
 form의 최종형태!!!!
 
-```react
+```typescript
 // 회원가입 form 최종 형태 
 
 import { useForm } from "react-hook-form";
@@ -1640,7 +1640,7 @@ export default ToDoList;
 
 입력받은 두 비밀번호의 일치 여부 판단
 
-```react
+```typescript
 const onValid = (data: IForm) => {
     if (data.password !== data.password1) {	// 입력받은 비밀번호가 일치하지 않는다면
       setError(	// 에러 발생 트리거
@@ -1656,7 +1656,7 @@ const onValid = (data: IForm) => {
 
 원하지 않는 값은 입력을 받지 않고 해당 오류 메세지(제약조건)을 보여준다
 
-```react
+```typescript
 <input {...register("firstName", {
    required: "write here",
    validate: { // validate을 통해 원하지 않는 입력 값 배제
@@ -1682,7 +1682,7 @@ const onValid = (data: IForm) => {
 
 useForm을 사용해서 기존의 ToDoList를 바꾸면
 
-```react
+```typescript
 import { useForm } from "react-hook-form";
 
 interface IForm {
@@ -1713,7 +1713,7 @@ export default ToDoList;
 
 - setValue
 
-```react
+```typescript
  const handleValid = (data: IForm) => {
     console.log("add to do", data.toDo);
     setValue("toDo", ""); // setValue => handleSubmit를 통과하면 toDo를 ""로 바꾼다.
@@ -1728,7 +1728,7 @@ useRecoilState 는 기존의 useRecoilValue와 useSetRecoilState의 기능을 �
 
 추가적으로 useState와 같은 형태를 가진다.
 
-```react
+```typescript
 const toDoState = atom<IToDo[]>({	// atom으로 등록한다. => global state 등록
   key: "ToDo",
   default: [],
@@ -1739,7 +1739,7 @@ const [toDos, setToDos] = useRecoilState(toDoState); // toDos는 setToDos로 만
 // const modFn = useSetRecoilState(toDoState);
 ```
 
-```react
+```typescript
 import { useForm } from "react-hook-form";
 import { atom, useRecoilState } from "recoil";
 
@@ -1800,7 +1800,7 @@ export default ToDoList;
 
 ToDoList에서 버튼을 눌렀을때 해당 버튼을 사라지게 하는 방법
 
-```react
+```typescript
 import React from "react";
 import { useSetRecoilState } from "recoil";
 import { IToDo, toDoState } from "../atoms";
@@ -1849,7 +1849,7 @@ ToDo에서 mutate하지 않고 새로운 array를 만들어서 반환해야함
 
 => 새로운 ToDo를 만들어서 원하는 값을 넣어놓는다
 
-```react
+```typescript
 function ToDo({ text, category, id }: IToDo) {
   const setToDos = useSetRecoilState(toDoState);
   const onClick = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -1874,8 +1874,8 @@ function ToDo({ text, category, id }: IToDo) {
 
 이때 기존의 array의 순서는 일치해야한다 => algorithm 적인 요소!!
 
-```react
-function ToDo({ text, category, id }: IToDo) {
+```typescript
+typescriptfunction ToDo({ text, category, id }: IToDo) {
   const setToDos = useSetRecoilState(toDoState);
   const onClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     const {
@@ -1893,5 +1893,239 @@ function ToDo({ text, category, id }: IToDo) {
   };
   return (
   ...
+```
+
+
+
+Recoil의 Selector => 기존에 저장되어있는 state를 가져와서 좀 더 유용하게 활용할 수 있도록 output을 변형할 수 있도록 도와줌 => derived state
+
+get function을 통해서 atom을 가져온다.
+
+selector의 get function을 통해 atom의 state와 연결하고 가져온 state를 원한는 대로 변형해서 return하면 해당 return값으로 처리할 수 있음
+
+기존의 atom에 있는 state그대로 존재함
+
+```typescript
+// atoms.tsx
+export const toDoState = atom<IToDo[]>({
+  key: "toDo",
+  default: [],
+});
+
+export const toDoSelector = selector({
+  key: "toDoSelector",
+  get: ({ get }) => {
+    const toDos = get(toDoState); // 위에서 atom으로 선언한 state를 가져온다, get function을 통해
+    return [
+      // 가져와서 연결한 state를 원하는 방식으로 분류해서 return한다.
+      toDos.filter((toDo) => toDo.category === "TO_DO"),
+      toDos.filter((toDo) => toDo.category === "DOING"),
+      toDos.filter((toDo) => toDo.category === "DONE"),
+    ];
+  },
+});
+
+// ToDoList.tsx
+function ToDoList() {
+  // const toDos = useRecoilValue(toDoState); => 기존에는 atom에서 직접 state를 가져옴
+  const [toDo, doing, done] = useRecoilValue(toDoSelector); // selector를 통해 분류한 state를 가져온다. return값이 [[],[],[]]임
+  return (
+    <div>
+      <h1>To Dos</h1>
+      <hr />
+      <CreateToDo />
+      <h2>To Do</h2>
+      <ul>
+        {toDo.map((toDo) => (
+          <ToDo key={toDo.id} {...toDo} />
+        ))}
+      </ul>
+      <hr />
+      <h2>Doing</h2>
+      <ul>
+        {doing.map((toDo) => (
+          <ToDo key={toDo.id} {...toDo} />
+        ))}
+      </ul>
+      <hr />
+      <h2>Done</h2>
+      <ul>
+        {done.map((toDo) => (
+          <ToDo key={toDo.id} {...toDo} />
+        ))}
+      </ul>
+      <hr />
+    </div>
+  );
+}
+export default ToDoList;
+```
+
+
+
+ToDoList의 최종형태
+
+enum을 통해서 좀 더 안정적으로 카테고리를 분류할 수 있도록함
+
+input에 value를 넣을때 무조건 ToDo가 아닌 해당 select value에 맞는 값으로 분류되도록함
+
+```typescript
+// Todo.tsx
+import React from "react";
+import { useSetRecoilState } from "recoil";
+import { Categories, IToDo, toDoState } from "../atoms";
+
+function ToDo({ text, category, id }: IToDo) {
+  const setToDos = useSetRecoilState(toDoState);
+  const onClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    const {
+      currentTarget: { name },
+    } = event;
+    setToDos((oldToDos) => {
+      const targetIndex = oldToDos.findIndex((toDo) => toDo.id === id);
+      const newToDo = { text, id, category: name as any }; // name as any => ts가 name은 검사하지 않고 그냥 통과!!
+      return [
+        ...oldToDos.slice(0, targetIndex),
+        newToDo,
+        ...oldToDos.slice(targetIndex + 1),
+      ];
+    });
+  };
+  return (
+    <li>
+      <span>{text}</span>
+      {category !== Categories.DOING && (
+        <button name={Categories.DOING} onClick={onClick}>
+          Doing
+        </button>
+      )}
+      {category !== Categories.TO_DO && (
+        <button name={Categories.TO_DO} onClick={onClick}>
+          To Do
+        </button>
+      )}
+      {category !== Categories.DONE && (
+        <button name={Categories.DONE} onClick={onClick}>
+          Done
+        </button>
+      )}
+    </li>
+  );
+}
+
+export default ToDo;
+```
+
+```typescript
+// ToDoList.tsx
+import React from "react";
+import { useRecoilState, useRecoilValue } from "recoil";
+import { Categories, categoryState, toDoSelector } from "../atoms";
+import CreateToDo from "./CreateToDo";
+import ToDo from "./ToDo";
+
+function ToDoList() {
+  // const toDos = useRecoilValue(toDoState); => 기존에는 atom에서 직접 state를 가져옴
+  // const [toDo, doing, done] = useRecoilValue(toDoSelector); // selector를 통해 분류한 state를 가져온다. return값이 [[],[],[]]임
+  const toDos = useRecoilValue(toDoSelector);
+  const [category, setCategory] = useRecoilState(categoryState);
+  const onInput = (event: React.FormEvent<HTMLSelectElement>) => {
+    setCategory(event.currentTarget.value as any);
+  };
+  return (
+    <div>
+      <h1>To Dos</h1>
+      <hr />
+      <select value={category} onInput={onInput}>
+        <option value={Categories.TO_DO}>To Do</option>
+        <option value={Categories.DOING}>Doing</option>
+        <option value={Categories.DONE}>Done</option>
+      </select>
+      <CreateToDo />
+      {toDos?.map((toDo) => (
+        <ToDo key={toDo.id} {...toDo} />
+      ))}
+    </div>
+  );
+}
+export default ToDoList;
+```
+
+```typescript
+// atoms.tsx
+import { atom, selector } from "recoil";
+
+export interface IToDo {
+  text: string;
+  id: number;
+  category: Categories;
+}
+
+export enum Categories {
+  "TO_DO" = "TO_DO", // "TO_DO" = "TO_DO" 하는 이유는 원래 enum으로 선언하면 "TO_DO"가 아니라 number로 인식함
+  "DOING" = "DOING", // "TO_DO" = "TO_DO" 로 선언하면 "TO_DO" string 그 자체로 인식하도록 바뀜
+  "DONE" = "DONE",
+}
+
+export const categoryState = atom<Categories>({
+  key: "category",
+  default: Categories.TO_DO,
+});
+
+export const toDoState = atom<IToDo[]>({
+  key: "toDo",
+  default: [],
+});
+
+export const toDoSelector = selector({
+  key: "toDoSelector",
+  get: ({ get }) => {
+    const toDos = get(toDoState); // 위에서 atom으로 선언한 state를 가져온다, get function을 통해
+    // return [
+    // 가져와서 연결한 state를 원하는 방식으로 분류해서 return한다.
+    // toDos.filter((toDo) => toDo.category === "TO_DO"),
+    // toDos.filter((toDo) => toDo.category === "DOING"),
+    // toDos.filter((toDo) => toDo.category === "DONE"),
+    // ];
+    const category = get(categoryState);
+    return toDos.filter((toDo) => toDo.category === category);
+  },
+});
+```
+
+```typescript
+// CreateToDo.tsx
+import { useForm } from "react-hook-form";
+import { useRecoilValue, useSetRecoilState } from "recoil";
+import { categoryState, toDoState } from "../atoms";
+interface IForm {
+  toDo: string;
+}
+
+function CreateToDo() {
+  const setToDos = useSetRecoilState(toDoState);
+  const category = useRecoilValue(categoryState);
+  const { register, handleSubmit, setValue } = useForm<IForm>();
+  const handleValid = ({ toDo }: IForm) => {
+    setToDos((oldToDos) => [
+      { text: toDo, id: Date.now(), category },
+      ...oldToDos,
+    ]);
+    setValue("toDo", "");
+  };
+  return (
+    <form onSubmit={handleSubmit(handleValid)}>
+      <input
+        {...register("toDo", {
+          required: "Please write a To Do",
+        })}
+        placeholder="Write a to do"
+      />
+      <button>Add</button>
+    </form>
+  );
+}
+
+export default CreateToDo;
 ```
 
