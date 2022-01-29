@@ -468,3 +468,427 @@ function App() {
 3. 이동한 component가 있는 Board를 복사한다
 4. 기존의 component가 이동했을 때 logic를 적용한다
 5. 최종적으로 return 할 때, Object형태 였기 때문에 기존의 Board(이동X) + 이동이 완료된 Board를 return한다.
+
+=> 다른 Board로 이동했을 경우에도 적용하기
+
+```typescript
+// App.tsx
+function App() {
+  const [toDos, setToDos] = useRecoilState(toDoState);
+  const onDragEnd = (info: DropResult) => {
+    console.log(info);
+    const { destination, draggableId, source } = info;
+    if (!destination) return;
+
+    if (destination?.droppableId === source.droppableId) {
+      // same board movement.
+      setToDos((allBoards) => {
+        const boardCopy = [...allBoards[source.droppableId]];
+        boardCopy.splice(source.index, 1);
+        boardCopy.splice(destination?.index, 0, draggableId);
+        return {
+          ...allBoards,
+          [source.droppableId]: boardCopy,
+        };
+      });
+    }
+    if (destination.droppableId !== source.droppableId) {
+      // cross board movement
+      setToDos((allBoards) => {
+        const sourceBoard = [...allBoards[source.droppableId]];
+        const destinationBoard = [...allBoards[destination.droppableId]];
+        sourceBoard.splice(source.index, 1);
+        destinationBoard.splice(destination?.index, 0, draggableId);
+        return {
+          ...allBoards,
+          [source.droppableId]: sourceBoard,
+          [destination.droppableId]: destinationBoard,
+        };
+      });
+    }
+  };
+
+  return (
+		...
+```
+
+같은 Board안에서 이동했을 경우와 같은 로직으로 적용한다
+
+destination만 추가되었음
+
+
+
+=> Droppable 의 magic말고 또 다른 인자인 info를 통해서 추가적인 설정이 가능하다
+
+=> 어떤 Board에서 왔는지, 해당 Board에 hover되었는지 여부 등... => 나중에 색 변화 줄 수 있음
+
+```typescript
+// Board.tsx
+function Board({ toDos, boardId }: IBoardProps) {
+  return (
+    <Wrapper>
+      <Title>{boardId}</Title>
+      <Droppable droppableId={boardId}>
+        {(magic, info) => ( // (magic, info)이 부분에서 info의 isDraggingOver, draggingFromThisWith 속성을 이용한다.
+          <Area	
+            isDraggingOver={info.isDraggingOver}
+            isDraggingFromThis={Boolean(info.draggingFromThisWith)}
+            ref={magic.innerRef}
+            {...magic.droppableProps}
+          >
+            {toDos.map((toDo, index) => (
+              <DragabbleCard key={toDo} index={index} toDo={toDo} />
+            ))}
+            {magic.placeholder}
+          </Area>
+        )}
+      </Droppable>
+    </Wrapper>
+  );
+}
+export default Board;
+```
+
+
+
+=> 위 처럼 Droppable 의 인자와 같이 Draggable에도 magic 말고 snapshot(== info) 기능이 존재함
+
+=> snapshot에도 많은 요소들이 저장되어 있음 => 위와 역할이 같음
+
+```typescript
+// DragabbleCard.tsx
+function DragabbleCard({ toDo, index }: IDragabbleCardProps) {
+  return (
+    <Draggable draggableId={toDo} index={index}>
+      {(magic, snapshot) => (	// (magic, snapshot) 은 Droppable와 같은 역할을 함
+        <Card
+          isDragging={snapshot.isDragging}
+          ref={magic.innerRef}
+          {...magic.dragHandleProps}
+          {...magic.draggableProps}
+        >
+          {toDo}
+        </Card>
+      )}
+    </Draggable>
+  );
+}
+
+export default React.memo(DragabbleCard);
+```
+
+
+
+Reference => useRef() 
+
+=> HTML태그를 잡아서 JS 명령어를 적용할 수 있도록 하는 것
+
+기존의 vanillaJS에서는 document.getElementBy ~로 HTML 태그를 잡은 뒤에 추가 명령을 했었지만 react.js의 useRef를 사용하면 같은 기능을 react-hook로 사용할 수 있다.
+
+```typescript
+// Board.tsx
+
+function Board({ toDos, boardId }: IBoardProps) {
+  const inputRef = useRef<HTMLInputElement>(null); // useRef을 통해 HTML 태그를 잡아옴
+  const onClick = () => {
+    inputRef.current?.focus(); // onClick 했을 때 inputRef.current?.focus(); 한다
+    setTimeout(() => {
+      inputRef.current?.blur();
+    }, 5000);
+  };
+  return (
+    <Wrapper>
+      <Title>{boardId}</Title>
+      <input ref={inputRef} placeholder="grab me" /> // <input> 에 ref={inputRef} 연결
+      <button onClick={onClick}>click me</button>
+      <Droppable droppableId={boardId}>
+        {(magic, info) => (
+          <Area
+            isDraggingOver={info.isDraggingOver}
+            isDraggingFromThis={Boolean(info.draggingFromThisWith)}
+            ref={magic.innerRef}
+            {...magic.droppableProps}
+          >
+            {toDos.map((toDo, index) => (
+              <DragabbleCard key={toDo} index={index} toDo={toDo} />
+            ))}
+            {magic.placeholder}
+          </Area>
+        )}
+      </Droppable>
+    </Wrapper>
+  );
+}
+export default Board;
+```
+
+
+
+=> 마지막으로 기존에 hard coding되어 있던 toDo 목록을 직접 사용자가 작성해서 input으로 받아와서 저장하는 과정 => useSetRecoilState 이용
+
+=> 최종 형태
+
+```typescript
+// App.tsx
+import { useRecoilState } from "recoil";
+import styled from "styled-components";
+import { toDoState } from "./atoms";
+import { DragDropContext, DropResult } from "react-beautiful-dnd";
+import Board from "./Components/Board";
+
+const Wrapper = styled.div`
+  display: flex;
+  max-width: 680px;
+  width: 100vw;
+  margin: 0 auto;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+`;
+
+const Boards = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  width: 100%;
+  gap: 10px;
+`;
+
+function App() {
+  const [toDos, setToDos] = useRecoilState(toDoState);
+  const onDragEnd = (info: DropResult) => {
+    const { destination, draggableId, source } = info;
+    if (!destination) return;
+
+    if (destination?.droppableId === source.droppableId) {
+      // same board movement.
+      setToDos((allBoards) => {
+        const boardCopy = [...allBoards[source.droppableId]];
+        const taskObj = boardCopy[source.index];
+
+        boardCopy.splice(source.index, 1);
+        boardCopy.splice(destination?.index, 0, taskObj);
+
+        return {
+          ...allBoards,
+          [source.droppableId]: boardCopy,
+        };
+      });
+    }
+    if (destination.droppableId !== source.droppableId) {
+      // cross board movement
+      setToDos((allBoards) => {
+        const sourceBoard = [...allBoards[source.droppableId]];
+        const taskObj = sourceBoard[source.index];
+
+        const destinationBoard = [...allBoards[destination.droppableId]];
+        sourceBoard.splice(source.index, 1);
+        destinationBoard.splice(destination?.index, 0, taskObj);
+        return {
+          ...allBoards,
+          [source.droppableId]: sourceBoard,
+          [destination.droppableId]: destinationBoard,
+        };
+      });
+    }
+  };
+
+  return (
+    <DragDropContext onDragEnd={onDragEnd}>
+      <Wrapper>
+        <Boards>
+          {Object.keys(toDos).map((boardId) => (
+            <Board boardId={boardId} key={boardId} toDos={toDos[boardId]} />
+          ))}
+        </Boards>
+      </Wrapper>
+    </DragDropContext>
+  );
+}
+
+export default App;
+```
+
+```typescript
+// atoms.tsx
+import { atom } from "recoil";
+
+export interface ITodo {
+  id: number;
+  text: string;
+}
+
+interface IToDoState {
+  [key: string]: ITodo[];
+  // to_do: ["a", "b"], => 구조 key는 string이고 value는 string[]임
+}
+
+export const toDoState = atom<IToDoState>({
+  key: "toDo",
+  default: {
+    "To Do": [],
+    Doing: [],
+    Done: [],
+  },
+});
+```
+
+```typescript
+// Board.tsx
+import { useForm } from "react-hook-form";
+import { Droppable } from "react-beautiful-dnd";
+import styled from "styled-components";
+import DragabbleCard from "./DragabbleCard";
+import { ITodo, toDoState } from "../atoms";
+import { useSetRecoilState } from "recoil";
+const Form = styled.form`
+  width: 100%;
+  input {
+    width: 100%;
+  }
+`;
+
+const Wrapper = styled.div`
+  width: 300px;
+  padding-top: 10px;
+  background-color: ${(props) => props.theme.boardColor};
+  border-radius: 5px;
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+`;
+
+const Title = styled.h2`
+  text-align: center;
+  font-weight: 600;
+  margin-bottom: 10px;
+  font-size: 18px;
+`;
+
+interface IAreaProps {
+  isDraggingFromThis: boolean;
+  isDraggingOver: boolean;
+}
+
+const Area = styled.div<IAreaProps>`
+  background-color: ${(props) =>
+    props.isDraggingOver
+      ? "#dfe6e9"
+      : props.isDraggingFromThis
+      ? "#b2bec3"
+      : "transparent"};
+  flex-grow: 1;
+  transition: background-color 0.3s ease-in-out;
+  padding: 20px;
+`;
+
+interface IBoardProps {
+  toDos: ITodo[];
+  boardId: string;
+}
+
+interface IForm {
+  toDo: string;
+  boardId: string;
+}
+
+function Board({ toDos, boardId }: IBoardProps) {
+  const setToDos = useSetRecoilState(toDoState);
+
+  const { register, setValue, handleSubmit } = useForm<IForm>();
+  const onValid = ({ toDo }: IForm) => {
+    const newToDo = {
+      id: Date.now(),
+      text: toDo,
+    };
+    setToDos((allBoards) => {
+      return {
+        ...allBoards,
+        [boardId]: [newToDo, ...allBoards[boardId]], // "toDo" : [ ... ] 와 같음
+      };
+    });
+    setValue("toDo", "");
+  };
+  return (
+    <Wrapper>
+      <Title>{boardId}</Title>
+      <Form onSubmit={handleSubmit(onValid)}>
+        <input
+          {...register("toDo", { required: true })}
+          type="text"
+          placeholder={`Add task on ${boardId}`}
+        />
+      </Form>
+      <Droppable droppableId={boardId}>
+        {(magic, info) => (
+          <Area
+            isDraggingOver={info.isDraggingOver}
+            isDraggingFromThis={Boolean(info.draggingFromThisWith)}
+            ref={magic.innerRef}
+            {...magic.droppableProps}
+          >
+            {toDos.map((toDo, index) => (
+              <DragabbleCard
+                key={toDo.id}
+                index={index}
+                toDoId={toDo.id}
+                toDoText={toDo.text}
+              />
+            ))}
+            {magic.placeholder}
+          </Area>
+        )}
+      </Droppable>
+    </Wrapper>
+  );
+}
+export default Board;
+```
+
+```typescript
+// Draggable.tsx
+import React from "react";
+import { Draggable } from "react-beautiful-dnd";
+import styled from "styled-components";
+
+const Card = styled.div<{ isDragging: boolean }>`
+  border-radius: 5px;
+  margin-bottom: 5px;
+  padding: 10px;
+  background-color: ${(props) =>
+    props.isDragging ? "#e4f2ff" : props.theme.cardColor};
+  box-shadow: ${(props) =>
+    props.isDragging ? "0px 2px 5px rgba(0, 0, 0, 0.05)" : "none"};
+`;
+
+interface IDragabbleCardProps {
+  toDoId: number;
+  toDoText: string;
+  index: number;
+}
+
+function DragabbleCard({ toDoId, toDoText, index }: IDragabbleCardProps) {
+  return (
+    <Draggable draggableId={toDoId + ""} index={index}>
+      {(magic, snapshot) => (
+        <Card
+          isDragging={snapshot.isDragging}
+          ref={magic.innerRef}
+          {...magic.dragHandleProps}
+          {...magic.draggableProps}
+        >
+          {toDoText}
+        </Card>
+      )}
+    </Draggable>
+  );
+}
+export default React.memo(DragabbleCard);
+```
+
+
+
+=> 새로고침하면 저장되어 있던 list들이 사라진다?
+
+=> atom을 local storage와 연결해서 해결 할 수 있음.
