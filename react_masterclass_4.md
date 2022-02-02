@@ -354,3 +354,155 @@ function Header() {
       </Col>
 ```
 
+
+
+- 원하는 그림을 background-image로 넣을 때 + 음영
+
+```typescript
+// Home.tsx
+
+const Banner = styled.div<{ bgPhoto: string }>`
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 60px;
+  background-image: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 1)), // 음영효과 넣기
+    url(${(props) => props.bgPhoto}); // 배경으로 image를 넣는 방법
+  background-size: cover; // 전체 페이지에 커버
+`;
+	...
+	
+    <Banner
+     onClick={increaseIndex}
+     bgPhoto={makeImagePath(data?.results[0].backdrop_path || "")} // backdrop_path가 있다면 해당 backdrop_path를 가져오고 만약에 없다면 ""빈문자열 반환
+    >
+     <Title>{data?.results[0].title}</Title>
+     <Overview>{data?.results[0].overview}</Overview>
+    </Banner>
+```
+
+=> makeImagePath를 불러오는 방법
+
+```typescript
+// utils.ts
+
+export function makeImagePath(id: string, format?: string) {
+  return `https://image.tmdb.org/t/p/${format ? format : "original"}/${id}`;
+}
+```
+
+
+
+- api 로 부터 영화 목록을 json형태로 받아오는 방법
+
+  => reactQuery를 사용해서 fetch function을 만든다.
+
+  => useQuery를 통해 영화들과 isLoading 정보를 받아온다.
+
+```typescript
+// api.tsx
+
+export function getMovies() { // api를 이용한 fetch function
+  return fetch(`${BASE_PATH}/movie/now_playing?api_key=${API_KEY}`).then(
+    (response) => response.json()
+  );
+}
+
+// =======================================================================================
+
+// Home.tsx
+
+function Home() {
+  const { data, isLoading } = useQuery<IGetMoviesResult>( // useQuery를 사용해서 정보 받기
+    ["movies", "nowPlaying"],
+    getMovies
+  );
+  const [index, setIndex] = useState(0);
+  const increaseIndex = () => setIndex((prev) => prev + 1);
+  return (
+```
+
+
+
+- Slider에 animation 넣기
+
+  => `<AnimatePresence>`로 감싼다.
+
+  => 관련 variants들을 설정한다.
+
+```typescript
+// home.tsx
+	...
+const Slider = styled.div`
+  position: relative;
+  top: -100px;	// -100px도 가능함
+`;
+
+const Row = styled(motion.div)`	// animation이 들어가는 element는 => (motion.div)
+  display: grid;	// grid로 설정
+  gap: 10px;	// 간격
+  grid-template-columns: repeat(6, 1fr); // 1줄에 6개가 들어갈 수 있도록 설정
+  position: absolute;
+  width: 100%;
+`;
+
+const Box = styled(motion.div)` // animation이 들어가는 element는 => (motion.div)
+  background-color: white;
+  height: 200px;
+  color: red;
+  font-size: 66px;
+`;
+
+const rowVariants = {
+  hidden: {
+    x: window.outerWidth + 5, // window.outerWidth : 사용자 모니터의 가로 사이즈를 가져오는 방법
+  },
+  visible: {
+    x: 0,
+  },
+  exit: {
+    x: -window.outerWidth - 5,
+  },
+};
+
+function Home() {
+  const { data, isLoading } = useQuery<IGetMoviesResult>(
+    ["movies", "nowPlaying"],
+    getMovies
+  );
+  const [index, setIndex] = useState(0);
+  const increaseIndex = () => setIndex((prev) => prev + 1);
+  return (
+    <Wrapper>
+      {isLoading ? (
+        <Loader>Loading...</Loader>
+      ) : (
+        <>
+          <Banner
+            onClick={increaseIndex}
+            bgPhoto={makeImagePath(data?.results[0].backdrop_path || "")}
+          >
+            <Title>{data?.results[0].title}</Title>
+            <Overview>{data?.results[0].overview}</Overview>
+          </Banner>
+          <Slider>
+            <AnimatePresence>	// animation이 들어가야하는 요소들을 <AnimatePresence>로 감싸기
+              <Row
+                variants={rowVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                transition={{ type: "tween", duration: 1 }} // tween : 떨림없이 linear
+                key={index} // react의 특성상 key값이 달라지면 새로운 element로 인식하고 리랜더링함
+              >
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <Box key={i}>{i}</Box>
+                ))}
+              </Row>
+            </AnimatePresence>
+          </Slider>
+        </>
+	...
+```
+
