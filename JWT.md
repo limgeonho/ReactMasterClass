@@ -5,3 +5,5 @@
 
 
 login-persist
+
+window.location.reload(true)
