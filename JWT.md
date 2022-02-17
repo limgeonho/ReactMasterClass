@@ -6,7 +6,7 @@
 
 login-persist
 
-window.location.reload(true)
+window.location.reload(true) 현재 페이지 새로고침
 
 useEffect(()=>{},[])를 사용하면 react의 onChange를 바로바로 받을 수 있음
 
@@ -27,3 +27,11 @@ window.scrollTo( 0, 1000 );
 
 
 filter: brightness(밝기정도);
+
+
+
+이미지 선택하면 미리보기 기능추가
+
+
+
+window.location.replace("이동할 주소")
