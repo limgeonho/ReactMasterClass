@@ -23,3 +23,7 @@ onClick={} 안에 함수의 인자를 전달하기 위해서는 onClick={()=>{}}
 ```
 window.scrollTo( 0, 1000 );
 ```
+
+
+
+filter: brightness(밝기정도);
